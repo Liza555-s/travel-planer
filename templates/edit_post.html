@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать пост{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Редактировать пост</h2>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label for="title" class="form-label">Заголовок</label>
+      <input type="text" class="form-control" id="title" name="title" value="{{ post.title }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="content" class="form-label">Содержание</label>
+      <textarea class="form-control" id="content" name="content" rows="5" required>{{ post.content }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="city" class="form-label">Город</label>
+      <input type="text" class="form-control" id="city" name="city" value="{{ post.city }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="image" class="form-label">Изображение</label>
+      {% if post.image_path %}
+      <div class="mb-2">
+        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Текущее изображение" class="img-thumbnail"
+          style="max-width: 200px;">
+      </div>
+      {% endif %}
+      <input type="file" class="form-control" id="image" name="image" accept="image/*">
+      <small class="text-muted">Оставьте пустым, чтобы сохранить текущее изображение</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Отмена</a>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.querySelector('#image-preview').src = e.target.result;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  document.querySelector('#image').addEventListener('change', function () {
+    previewImage(this);
+  });
+</script>
+{% endblock %}

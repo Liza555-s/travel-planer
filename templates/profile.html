@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <!-- <img src="{{ url_for('static', filename='uploads/' + user.avatar) if user.avatar else url_for('static', filename='images/default_avatar.jpg') }}" 
+                         class="img-fluid rounded-circle mb-3" alt="Avatar"> -->
+                    <h5 class="card-title">{{ user.username }}</h5>
+                    <p class="card-text">{{ user.email }}</p>
+                    {% if current_user.is_authenticated and current_user.id == user.id %}
+                    <a href="{{ url_for('main.edit_profile') }}" class="btn btn-primary">Редактировать профиль</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h3>Посты пользователя</h3>
+            {% if posts %}
+            <div class="row">
+                {% for post in posts %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        {% if post.image_path %}
+                        <img src="{{ url_for('static', filename=post.image_path) }}" class="card-img-top" alt="Post image">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post.title }}</h5>
+                            <p class="card-text">{{ post.content[:200] }}...</p>
+                            <p class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</p>
+                            <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-primary">Читать далее</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>У пользователя пока нет постов.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function deleteAccount() {
+    if (confirm('Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить!')) {
+      fetch('{{ url_for("main.delete_account") }}', {
+        method: 'DELETE'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            window.location.href = '{{ url_for("main.index") }}';
+          } else {
+            alert('Ошибка при удалении аккаунта');
+          }
+        });
+    }
+  }
+
+  // Анимация появления элементов
+  document.addEventListener('DOMContentLoaded', function () {
+    const cards = document.querySelectorAll('.post-card, .card');
+    cards.forEach((card, index) => {
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
+  });
+</script>
+{% endblock %}

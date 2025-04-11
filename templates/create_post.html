@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Создать пост{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Создать новый пост</h2>
+                    <form method="POST" enctype="multipart/form-data" id="create-post-form">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Заголовок</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Содержание</label>
+                            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="city" class="form-label">Город</label>
+                            <input type="text" class="form-control" id="city" name="city" list="cities-list" required>
+                            <datalist id="cities-list">
+                                {% for city in cities %}
+                                <option value="{{ city }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="place" class="form-label">Место (необязательно)</label>
+                            <input type="text" class="form-control" id="place" name="place" list="places-list">
+                            <input type="hidden" id="place_id" name="place_id">
+                            <datalist id="places-list">
+                                {% for place in places %}
+                                <option value="{{ place.name }} ({{ place.city }})" data-id="{{ place.id }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Изображение</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Создать пост</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const placeInput = document.getElementById('place');
+    const placeIdInput = document.getElementById('place_id');
+    const placesList = document.getElementById('places-list');
+
+    // Обработка выбора места
+    placeInput.addEventListener('input', function() {
+        const selectedOption = Array.from(placesList.options).find(
+            option => option.value === this.value
+        );
+        if (selectedOption) {
+            placeIdInput.value = selectedOption.dataset.id;
+        } else {
+            placeIdInput.value = '';
+        }
+    });
+
+    // Валидация формы
+    document.getElementById('create-post-form').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const city = document.getElementById('city').value.trim();
+        const content = document.getElementById('content').value.trim();
+
+        if (!title || !city || !content) {
+            e.preventDefault();
+            if (!title) document.getElementById('title').classList.add('is-invalid');
+            if (!city) document.getElementById('city').classList.add('is-invalid');
+            if (!content) document.getElementById('content').classList.add('is-invalid');
+        }
+    });
+
+    // Очистка сообщений об ошибках при вводе
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
