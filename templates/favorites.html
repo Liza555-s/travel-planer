@@ -11,23 +11,20 @@
         <div class="col-md-4 mb-4">
             <div class="card h-100">
                 {% if favorite.place.image_path %}
-                <img src="{{ url_for('static', filename=favorite.place.image_path.replace('static/', '')) }}" class="card-img-top" alt="{{ favorite.place.name }}">
-                {% else %}
-                <img src="{{ url_for('static', filename='images/default_place.jpg') }}" class="card-img-top" alt="Изображение места отсутствует">
+                <img src="{{ url_for('static', filename=favorite.place.image_path) }}" class="card-img-top"
+                    alt="{{ favorite.place.name }}">
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ favorite.place.name }}</h5>
-                    <p class="card-text">{{ favorite.place.description[:150] }}{% if favorite.place.description|length > 150 %}...{% endif %}</p>
-                    <p class="card-text"><small class="text-muted">{{ favorite.place.city }}</small></p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('place_detail', place_id=favorite.place.id) }}" class="btn btn-primary">Подробнее</a>
-                        <button onclick="toggleFavorite({{ favorite.place.id }})" class="btn btn-danger favorite-btn" data-place-id="{{ favorite.place.id }}">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <small class="text-muted">{{ favorite.place.posts|length }} постов</small>
+                    <p class="text-muted">{{ favorite.place.city }}{% if favorite.place.country %}, {{
+                        favorite.place.country }}{% endif %}</p>
+                    <p class="card-text">{{ favorite.place.description[:150] if favorite.place.description else '' }}{%
+                        if favorite.place.description and favorite.place.description|length > 150 %}...{% endif %}</p>
+                    <a href="{{ url_for('main.place_detail', place_id=favorite.place.id) }}"
+                        class="btn btn-primary">Подробнее</a>
+                    <button class="btn btn-outline-danger remove-favorite" data-place-id="{{ favorite.place.id }}">
+                        <i class="fas fa-heart"></i> Удалить из избранного
+                    </button>
                 </div>
             </div>
         </div>
@@ -37,37 +34,28 @@
     <p>У вас пока нет избранных мест.</p>
     {% endif %}
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const favoriteBtns = document.querySelectorAll('.favorite-btn');
-    favoriteBtns.forEach(btn => {
-        const placeId = btn.dataset.placeId;
-        fetch(`/place/${placeId}/is_favorite`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_favorite) {
-                    btn.classList.remove('btn-outline-danger');
-                    btn.classList.add('btn-danger');
-                }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.remove-favorite').forEach(button => {
+            button.addEventListener('click', function () {
+                const placeId = this.dataset.placeId;
+                fetch(`/place/${placeId}/toggle_favorite`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'removed') {
+                            this.closest('.col-md-4').remove();
+                            if (document.querySelectorAll('.col-md-4').length === 0) {
+                                location.reload();
+                            }
+                        }
+                    });
             });
+        });
     });
-});
-
-function toggleFavorite(placeId) {
-    const btn = document.querySelector(`.favorite-btn[data-place-id="${placeId}"]`);
-    fetch(`/place/${placeId}/favorite`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'removed') {
-            location.reload();
-        }
-    });
-}
 </script>
 {% endblock %}

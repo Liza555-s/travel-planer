@@ -4,159 +4,80 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card mb-4">
+    <div class="card">
         {% if post.image_path %}
-        <img src="{{ url_for('static', filename=post.image_path.replace('static/', '')) }}" class="card-img-top" alt="{{ post.title }}" style="height: 400px; object-fit: cover;">
+        <img src="{{ url_for('static', filename=post.image_path) }}" class="card-img-top" alt="{{ post.title }}">
         {% endif %}
         <div class="card-body">
             <h1 class="card-title">{{ post.title }}</h1>
-            <p class="card-text text-muted">
-                <small>
-                    Автор: <a href="{{ url_for('main.user_profile', username=post.author.username) }}">{{ post.author.username }}</a> •
-                    Опубликовано: {{ post.date_posted.strftime('%d.%m.%Y') }}
-                </small>
+            <p class="text-muted">
+                Автор: <a href="{{ url_for('main.profile', user_id=post.author.id) }}">{{ post.author.username }}</a>
+                | Дата: {{ post.date_posted.strftime('%d.%m.%Y %H:%M') }}
             </p>
             {% if post.place %}
             <p class="card-text">
                 <small class="text-muted">
-                    Место: <a href="{{ url_for('main.place_detail', place_id=post.place.id) }}">{{ post.place.name }}</a>
+                    Место: <a href="{{ url_for('main.place_detail', place_id=post.place.id) }}">{{ post.place.name
+                        }}</a>
                 </small>
             </p>
             {% endif %}
             <p class="card-text">{{ post.content }}</p>
-            
+
             {% if current_user.is_authenticated %}
-            <div class="d-flex align-items-center mb-3">
-                <button onclick="toggleLike({{ post.id }})" class="btn btn-outline-danger like-btn me-2" data-post-id="{{ post.id }}">
-                    <i class="fas fa-heart"></i> <span class="like-count">{{ post.likes|length }}</span>
-                </button>
+            <div class="like-section mb-3">
+                <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-link p-0">
+                        <i
+                            class="fas fa-heart {% if post.is_liked_by(current_user) %}text-danger{% else %}text-secondary{% endif %}"></i>
+                    </button>
+                </form>
+                <span class="likes-count">{{ post.likes|length }}</span> лайков
             </div>
             {% endif %}
 
-            {% if current_user.is_authenticated and current_user == post.author %}
-            <div class="btn-group">
+            {% if current_user.is_authenticated and current_user.id == post.author.id %}
+            <div class="btn-group mb-3">
                 <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-primary">Редактировать</a>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    Удалить
-                </button>
+                <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Вы уверены, что хотите удалить этот пост?')">Удалить</button>
+                </form>
             </div>
             {% endif %}
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h4>Комментарии</h4>
+            <h3>Комментарии</h3>
             {% if current_user.is_authenticated %}
-            <form method="POST" action="{{ url_for('main.add_comment', post_id=post.id) }}" class="mb-4">
+            <form action="{{ url_for('main.add_comment', post_id=post.id) }}" method="POST" class="mb-4">
                 <div class="form-group">
-                    <textarea name="content" class="form-control" rows="3" required placeholder="Оставьте комментарий..."></textarea>
+                    <textarea name="content" class="form-control" rows="3" required></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary mt-2">Отправить</button>
+                <button type="submit" class="btn btn-primary mt-2">Добавить комментарий</button>
             </form>
             {% endif %}
 
-            {% if comments %}
-            {% for comment in comments %}
+            {% for comment in post.comments %}
             <div class="card mb-2">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <h6 class="card-subtitle mb-2 text-muted">
-                            {{ comment.author.username }}
-                            <small>{{ comment.date_posted.strftime('%d.%m.%Y %H:%M') }}</small>
-                        </h6>
-                        {% if current_user == comment.author %}
-                        <button onclick="deleteComment({{ comment.id }})" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        {% endif %}
-                    </div>
                     <p class="card-text">{{ comment.content }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <a href="{{ url_for('main.profile', user_id=comment.user.id) }}">{{ comment.user.username
+                                }}</a>
+                            | {{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </small>
+                    </p>
+                    {% if current_user.is_authenticated and current_user.id == comment.user.id %}
+                    <form action="{{ url_for('main.delete_comment', comment_id=comment.id) }}" method="POST"
+                        class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?')">Удалить</button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
-            {% else %}
-            <p class="text-muted">Пока нет комментариев.</p>
-            {% endif %}
         </div>
     </div>
 </div>
-
-{% if current_user.is_authenticated and current_user == post.author %}
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Вы уверены, что хотите удалить этот пост?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Удалить</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const likeBtn = document.querySelector('.like-btn');
-    if (likeBtn) {
-        const postId = likeBtn.dataset.postId;
-        fetch(`{{ url_for('main.is_post_liked', post_id=0) }}`.replace('0', postId))
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_liked) {
-                    likeBtn.classList.remove('btn-outline-danger');
-                    likeBtn.classList.add('btn-danger');
-                }
-            });
-    }
-});
-
-function toggleLike(postId) {
-    const btn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
-    const countSpan = btn.querySelector('.like-count');
-    
-    fetch(`{{ url_for('main.like_post', post_id=0) }}`.replace('0', postId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        countSpan.textContent = data.likes_count;
-        if (data.status === 'liked') {
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-danger');
-        } else {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-outline-danger');
-        }
-    });
-}
-
-function deleteComment(commentId) {
-    if (confirm('Вы уверены, что хотите удалить этот комментарий?')) {
-        fetch(`{{ url_for('main.delete_comment', comment_id=0) }}`.replace('0', commentId), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            }
-        });
-    }
-}
-</script>
-{% endblock %} 
+{% endblock %}

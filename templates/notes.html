@@ -1,158 +1,144 @@
 {% extends "base.html" %}
 
-{% block title %}Заметки{% endblock %}
+{% block title %}Мои заметки{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
+        <!-- Календарь -->
         <div class="col-md-4">
             <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Календарь</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Новая заметка</h5>
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Заголовок</label>
-                            <input type="text" class="form-control" id="title" name="title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Дата</label>
-                            <input type="date" class="form-control" id="date" name="date">
-                        </div>
-                        <div class="mb-3">
-                            <label for="content" class="form-label">Содержание</label>
-                            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Создать</button>
-                    </form>
+                    <div id="calendar"></div>
                 </div>
             </div>
         </div>
+
+        <!-- Список заметок -->
         <div class="col-md-8">
-            <h2>Мои заметки</h2>
-            <div class="row">
-                {% for note in notes %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ note.title }}</h5>
-                            {% if note.date %}
-                            <p class="card-text"><small class="text-muted">Дата: {{ note.date.strftime('%d.%m.%Y') }}</small></p>
-                            {% endif %}
-                            <p class="card-text">{{ note.content }}</p>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary edit-note" data-id="{{ note.id }}" data-title="{{ note.title }}" data-content="{{ note.content }}" data-date="{{ note.date.strftime('%Y-%m-%d') if note.date }}">
-                                    Редактировать
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger delete-note" data-id="{{ note.id }}">Удалить</button>
-                            </div>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Мои заметки</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                        Добавить заметку
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if notes %}
+                    {% for note in notes %}
+                    <div class="note-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6>{{ note.title }}</h6>
+                            <small class="text-muted">{{ note.date.strftime('%d.%m.%Y %H:%M') }}</small>
+                        </div>
+                        <p class="mb-0">{{ note.content }}</p>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary edit-note" data-id="{{ note.id }}">
+                                Редактировать
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-note" data-id="{{ note.id }}">
+                                Удалить
+                            </button>
                         </div>
                     </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">У вас пока нет заметок</p>
+                    {% endif %}
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно для редактирования -->
-<div class="modal fade" id="editModal" tabindex="-1">
+<!-- Модальное окно для добавления заметки -->
+<div class="modal fade" id="addNoteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Редактировать заметку</h5>
+                <h5 class="modal-title">Добавить заметку</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editForm">
-                    <input type="hidden" id="editNoteId">
+                <form id="noteForm" method="POST">
                     <div class="mb-3">
-                        <label for="editTitle" class="form-label">Заголовок</label>
-                        <input type="text" class="form-control" id="editTitle" required>
+                        <label for="title" class="form-label">Заголовок</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editDate" class="form-label">Дата</label>
-                        <input type="date" class="form-control" id="editDate">
+                        <label for="content" class="form-label">Содержание</label>
+                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="editContent" class="form-label">Содержание</label>
-                        <textarea class="form-control" id="editContent" rows="3" required></textarea>
+                        <label for="date" class="form-label">Дата и время</label>
+                        <input type="datetime-local" class="form-control" id="date" name="date" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="saveEdit">Сохранить</button>
+                <button type="submit" form="noteForm" class="btn btn-primary">Сохранить</button>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    
-    // Обработчик кнопки редактирования
-    document.querySelectorAll('.edit-note').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const title = this.dataset.title;
-            const content = this.dataset.content;
-            const date = this.dataset.date;
-            
-            document.getElementById('editNoteId').value = id;
-            document.getElementById('editTitle').value = title;
-            document.getElementById('editContent').value = content;
-            document.getElementById('editDate').value = date;
-            
-            editModal.show();
-        });
-    });
-    
-    // Обработчик сохранения изменений
-    document.getElementById('saveEdit').addEventListener('click', function() {
-        const id = document.getElementById('editNoteId').value;
-        const title = document.getElementById('editTitle').value;
-        const content = document.getElementById('editContent').value;
-        const date = document.getElementById('editDate').value;
-        
-        fetch(`/notes/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
+    document.addEventListener('DOMContentLoaded', function () {
+        // Инициализация календаря
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ru',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth'
             },
-            body: JSON.stringify({
-                title: title,
-                content: content,
-                date: date
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.id) {
-                location.reload();
-            }
-        });
+            events: [
+                {% for date, notes in notes_by_date.items() %}
+            {
+                title: '{{ notes|length }} заметок',
+                date: '{{ date }}',
+                backgroundColor: '#007bff',
+                borderColor: '#007bff',
+                textColor: '#fff'
+            },
+            {% endfor %}
+        ],
+        eventClick: function (info) {
+            window.location.href = `/notes/date/${info.event.startStr.split('T')[0]}`;
+        }
     });
-    
-    // Обработчик удаления
+    calendar.render();
+
+    // Обработка удаления заметки
     document.querySelectorAll('.delete-note').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             if (confirm('Вы уверены, что хотите удалить эту заметку?')) {
-                const id = this.dataset.id;
-                fetch(`/notes/${id}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) {
-                        location.reload();
+                fetch(`/notes/${this.dataset.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                });
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'Заметка удалена') {
+                            location.reload();
+                        }
+                    });
             }
         });
     });
 });
 </script>
+{% endblock %}
 {% endblock %}

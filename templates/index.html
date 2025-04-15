@@ -15,61 +15,36 @@
 
     <div class="row">
         {% for post in posts.items %}
-        <div class="col-md-6 mb-4">
+        <div class="col-md-4 mb-4">
             <div class="card h-100">
                 {% if post.image_path %}
-                <img src="{{ url_for('static', filename=post.image_path.replace('static/', '')) }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                <img src="{{ url_for('static', filename=post.image_path) }}" class="card-img-top"
+                    alt="{{ post.title }}">
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ post.title }}</h5>
-                    <p class="card-text">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
+                    <p class="card-text">{{ post.content[:200] }}...</p>
                     <p class="card-text">
                         <small class="text-muted">
-                            Автор: <a href="{{ url_for('main.user_profile', username=post.author.username) }}">{{ post.author.username }}</a> •
-                            {{ post.date_posted.strftime('%d.%m.%Y') }}
+                            <i class="fas fa-map-marker-alt"></i> {{ post.city }}
                         </small>
                     </p>
-                    {% if post.place %}
                     <p class="card-text">
                         <small class="text-muted">
-                            Место: <a href="{{ url_for('main.place_detail', place_id=post.place.id) }}">{{ post.place.name }}</a>
+                            <i class="fas fa-user"></i> {{ post.author.username }}
+                            <br>
+                            <i class="fas fa-calendar"></i> {{ post.date_posted.strftime('%d.%m.%Y') }}
                         </small>
                     </p>
-                    {% endif %}
-                    
-                    {% if current_user.is_authenticated %}
-                    <div class="d-flex align-items-center mb-3">
-                        <button onclick="toggleLike({{ post.id }})" class="btn btn-outline-danger like-btn me-2" data-post-id="{{ post.id }}">
-                            <i class="fas fa-heart"></i> <span class="like-count">{{ post.likes|length }}</span>
-                        </button>
-                    </div>
-                    {% endif %}
-
-                    <div class="comments-section">
-                        <h6>Комментарии</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-primary">Читать
+                            далее</a>
                         {% if current_user.is_authenticated %}
-                        <form method="POST" action="{{ url_for('main.add_comment', post_id=post.id) }}" class="mb-3">
-                            <div class="input-group">
-                                <textarea name="content" class="form-control" rows="2" required placeholder="Оставьте комментарий..."></textarea>
-                                <button type="submit" class="btn btn-primary">Отправить</button>
-                            </div>
-                        </form>
-                        {% endif %}
-
-                        {% if post.comments %}
-                        <div class="comments-list">
-                            {% for comment in post.comments[:3] %}
-                            <div class="comment mb-2">
-                                <small class="text-muted">{{ comment.author.username }}:</small>
-                                <p class="mb-0">{{ comment.content }}</p>
-                            </div>
-                            {% endfor %}
-                            {% if post.comments|length > 3 %}
-                            <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="text-muted">Показать все комментарии ({{ post.comments|length }})</a>
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        <p class="text-muted small">Пока нет комментариев</p>
+                        <button onclick="toggleLike({{ post.id }})" class="btn btn-outline-danger like-btn"
+                            data-post-id="{{ post.id }}">
+                            <i class="fas fa-heart"></i>
+                            <span class="like-count">{{ post.likes|length }}</span>
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -81,57 +56,71 @@
     {% if posts.pages > 1 %}
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">
-            {% for page in posts.iter_pages() %}
-                {% if page %}
-                    <li class="page-item {% if page == posts.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('main.index', page=page) }}">{{ page }}</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                {% endif %}
+            {% if posts.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.index', page=posts.prev_num) }}">Предыдущая</a>
+            </li>
+            {% endif %}
+
+            {% for page_num in posts.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+            {% if page_num %}
+            <li class="page-item {% if page_num == posts.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
             {% endfor %}
+
+            {% if posts.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.index', page=posts.next_num) }}">Следующая</a>
+            </li>
+            {% endif %}
         </ul>
     </nav>
     {% endif %}
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const likeBtns = document.querySelectorAll('.like-btn');
-    likeBtns.forEach(btn => {
-        const postId = btn.dataset.postId;
-        fetch(`{{ url_for('main.is_post_liked', post_id=0) }}`.replace('0', postId))
+    document.addEventListener('DOMContentLoaded', function () {
+        const likeBtns = document.querySelectorAll('.like-btn');
+        likeBtns.forEach(btn => {
+            const postId = btn.dataset.postId;
+            fetch(`{{ url_for('main.is_post_liked', post_id=0) }}`.replace('0', postId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_liked) {
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-danger');
+                    }
+                });
+        });
+    });
+
+    function toggleLike(postId) {
+        const btn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+        const countSpan = btn.querySelector('.like-count');
+
+        fetch(`{{ url_for('main.like_post', post_id=0) }}`.replace('0', postId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
             .then(response => response.json())
             .then(data => {
-                if (data.is_liked) {
+                countSpan.textContent = data.likes_count;
+                if (data.status === 'liked') {
                     btn.classList.remove('btn-outline-danger');
                     btn.classList.add('btn-danger');
+                } else {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-danger');
                 }
             });
-    });
-});
-
-function toggleLike(postId) {
-    const btn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
-    const countSpan = btn.querySelector('.like-count');
-    
-    fetch(`{{ url_for('main.like_post', post_id=0) }}`.replace('0', postId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        countSpan.textContent = data.likes_count;
-        if (data.status === 'liked') {
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-danger');
-        } else {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-outline-danger');
-        }
-    });
-}
+    }
 </script>
 {% endblock %}

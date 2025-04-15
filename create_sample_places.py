@@ -1,143 +1,120 @@
-from app import app, db
-from models import Place
+from app import create_app
+from models import db, Place
 import os
 
-def create_places():
+app = create_app()
+
+with app.app_context():
+    # Очищаем таблицу мест
+    Place.query.delete()
+    
     # Создаем директорию для изображений мест, если она не существует
     places_images_dir = os.path.join('static', 'uploads', 'places')
     os.makedirs(places_images_dir, exist_ok=True)
 
-    places_data = [
+    # Список популярных мест в России
+    places = [
         {
             'name': 'Красная площадь',
             'city': 'Москва',
-            'image_path': 'uploads/places/red_square.jpg',
-            'description': 'Главная площадь Москвы, исторический центр города'
+            'country': 'Россия',
+            'description': 'Главная площадь Москвы, расположенная в центре города. Здесь находятся Кремль, Собор Василия Блаженного и другие исторические памятники.'
         },
         {
             'name': 'Эрмитаж',
             'city': 'Санкт-Петербург',
-            'image_path': 'uploads/places/hermitage.jpg',
-            'description': 'Один из крупнейших музеев мира'
+            'country': 'Россия',
+            'description': 'Один из крупнейших музеев мира, расположенный в Санкт-Петербурге. Его коллекция насчитывает более 3 миллионов произведений искусства.'
         },
         {
             'name': 'Озеро Байкал',
             'city': 'Иркутск',
-            'image_path': 'uploads/places/baikal.jpg',
-            'description': 'Самое глубокое озеро на планете'
-        },
-        {
-            'name': 'Долина гейзеров',
-            'city': 'Петропавловск-Камчатский',
-            'image_path': 'uploads/places/geysers.jpg',
-            'description': 'Уникальный природный комплекс'
+            'country': 'Россия',
+            'description': 'Самое глубокое озеро в мире и крупнейший природный резервуар пресной воды. Его уникальная экосистема поражает воображение.'
         },
         {
             'name': 'Кижи',
             'city': 'Петрозаводск',
-            'image_path': 'uploads/places/kizhi.jpg',
-            'description': 'Музей-заповедник деревянного зодчества'
+            'country': 'Россия',
+            'description': 'Музей-заповедник под открытым небом, где собраны уникальные памятники деревянного зодчества Русского Севера.'
         },
         {
-            'name': 'Соловецкий монастырь',
-            'city': 'Архангельск',
-            'image_path': 'uploads/places/solovki.jpg',
-            'description': 'Древний монастырский комплекс'
+            'name': 'Долина гейзеров',
+            'city': 'Петропавловск-Камчатский',
+            'country': 'Россия',
+            'description': 'Уникальное природное явление, где на небольшой территории сосредоточено множество горячих источников и гейзеров.'
         },
         {
-            'name': 'Плато Путорана',
-            'city': 'Норильск',
-            'image_path': 'uploads/places/putorana.jpg',
-            'description': 'Уникальное базальтовое плато'
+            'name': 'Сочи Парк',
+            'city': 'Сочи',
+            'country': 'Россия',
+            'description': 'Первый тематический парк в России, расположенный в Олимпийском парке Сочи.'
+        },
+        {
+            'name': 'Кунгурская пещера',
+            'city': 'Кунгур',
+            'country': 'Россия',
+            'description': 'Одна из самых известных пещер России, известная своими ледяными образованиями.'
+        },
+        {
+            'name': 'Петергоф',
+            'city': 'Санкт-Петербург',
+            'country': 'Россия',
+            'description': 'Дворцово-парковый ансамбль, известный своими фонтанами и дворцами.'
         },
         {
             'name': 'Куршская коса',
             'city': 'Калининград',
-            'image_path': 'uploads/places/curonian_spit.jpg',
-            'description': 'Песчаная коса между Балтийским морем и Куршским заливом'
+            'country': 'Россия',
+            'description': 'Уникальный природный заповедник, включенный в список Всемирного наследия ЮНЕСКО.'
         },
         {
-            'name': 'Алтайские горы',
-            'city': 'Горно-Алтайск',
-            'image_path': 'uploads/places/altai.jpg',
-            'description': 'Горная система в Центральной Азии'
-        },
-        {
-            'name': 'Ключевская сопка',
-            'city': 'Петропавловск-Камчатский',
-            'image_path': 'uploads/places/kluchevskaya.jpg',
-            'description': 'Самый высокий действующий вулкан Евразии'
-        },
-        {
-            'name': 'Телецкое озеро',
-            'city': 'Горно-Алтайск',
-            'image_path': 'uploads/places/teletskoye.jpg',
-            'description': 'Крупнейшее озеро Алтая'
+            'name': 'Алмазный карьер Мир',
+            'city': 'Мирный',
+            'country': 'Россия',
+            'description': 'Один из крупнейших алмазных карьеров в мире, глубиной более 500 метров.'
         },
         {
             'name': 'Домбай',
-            'city': 'Черкесск',
-            'image_path': 'uploads/places/dombay.jpg',
-            'description': 'Горнолыжный курорт в Карачаево-Черкесии'
+            'city': 'Карачаевск',
+            'country': 'Россия',
+            'description': 'Популярный горнолыжный курорт на Северном Кавказе.'
         },
         {
-            'name': 'Валдайский национальный парк',
-            'city': 'Валдай',
-            'image_path': 'uploads/places/valday.jpg',
-            'description': 'Уникальный природный комплекс'
+            'name': 'Плато Путорана',
+            'city': 'Норильск',
+            'country': 'Россия',
+            'description': 'Уникальное плато с множеством водопадов и озер, включенное в список Всемирного наследия ЮНЕСКО.'
         },
         {
-            'name': 'Остров Врангеля',
-            'city': 'Певек',
-            'image_path': 'uploads/places/wrangel.jpg',
-            'description': 'Заповедник в Северном Ледовитом океане'
-        },
-        {
-            'name': 'Кунгурская ледяная пещера',
-            'city': 'Кунгур',
-            'image_path': 'uploads/places/kungur.jpg',
-            'description': 'Одна из самых популярных достопримечательностей Урала'
-        },
-        {
-            'name': 'Озеро Селигер',
-            'city': 'Осташков',
-            'image_path': 'uploads/places/seliger.jpg',
-            'description': 'Система озёр ледникового происхождения'
-        },
-        {
-            'name': 'Водопад Кивач',
-            'city': 'Петрозаводск',
-            'image_path': 'uploads/places/kivach.jpg',
-            'description': 'Один из крупнейших равнинных водопадов Европы'
-        },
-        {
-            'name': 'Лотосовые поля',
-            'city': 'Астрахань',
-            'image_path': 'uploads/places/lotus.jpg',
-            'description': 'Уникальное природное явление в дельте Волги'
-        },
-        {
-            'name': 'Красноярские Столбы',
-            'city': 'Красноярск',
-            'image_path': 'uploads/places/stolby.jpg',
-            'description': 'Заповедник со скальными останцами'
-        },
-        {
-            'name': 'Озеро Эльтон',
+            'name': 'Волгоградская панорама',
             'city': 'Волгоград',
-            'image_path': 'uploads/places/elton.jpg',
-            'description': 'Крупнейшее соленое озеро Европы'
+            'country': 'Россия',
+            'description': 'Музей-панорама, посвященный Сталинградской битве.'
+        },
+        {
+            'name': 'Кировский парк',
+            'city': 'Екатеринбург',
+            'country': 'Россия',
+            'description': 'Один из старейших парков города с богатой историей и красивыми пейзажами.'
+        },
+        {
+            'name': 'Остров Валаам',
+            'city': 'Сортавала',
+            'country': 'Россия',
+            'description': 'Остров в Ладожском озере, известный своим монастырем и уникальной природой.'
         }
     ]
-
-    with app.app_context():
-        for place_data in places_data:
-            place = Place.query.filter_by(name=place_data['name']).first()
-            if not place:
-                place = Place(**place_data)
-                db.session.add(place)
-        
-        db.session.commit()
+    
+    # Добавляем места в базу данных
+    for place_data in places:
+        place = Place(**place_data)
+        db.session.add(place)
+    
+    # Сохраняем изменения
+    db.session.commit()
+    
+    print('Тестовые места успешно добавлены в базу данных!')
 
 if __name__ == '__main__':
     create_places() 

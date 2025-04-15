@@ -3,52 +3,100 @@
 {% block title %}Редактировать пост{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4">
   <h2>Редактировать пост</h2>
   <form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
     <div class="mb-3">
-      <label for="title" class="form-label">Заголовок</label>
-      <input type="text" class="form-control" id="title" name="title" value="{{ post.title }}" required>
-    </div>
-    <div class="mb-3">
-      <label for="content" class="form-label">Содержание</label>
-      <textarea class="form-control" id="content" name="content" rows="5" required>{{ post.content }}</textarea>
-    </div>
-    <div class="mb-3">
-      <label for="city" class="form-label">Город</label>
-      <input type="text" class="form-control" id="city" name="city" value="{{ post.city }}" required>
-    </div>
-    <div class="mb-3">
-      <label for="image" class="form-label">Изображение</label>
-      {% if post.image_path %}
-      <div class="mb-2">
-        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Текущее изображение" class="img-thumbnail"
-          style="max-width: 200px;">
+      {{ form.title.label(class="form-label") }}
+      {{ form.title(class="form-control") }}
+      {% if form.title.errors %}
+      <div class="alert alert-danger">
+        {% for error in form.title.errors %}
+        {{ error }}
+        {% endfor %}
       </div>
       {% endif %}
-      <input type="file" class="form-control" id="image" name="image" accept="image/*">
-      <small class="text-muted">Оставьте пустым, чтобы сохранить текущее изображение</small>
     </div>
-    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Отмена</a>
+
+    <div class="mb-3">
+      {{ form.content.label(class="form-label") }}
+      {{ form.content(class="form-control", rows=5) }}
+      {% if form.content.errors %}
+      <div class="alert alert-danger">
+        {% for error in form.content.errors %}
+        {{ error }}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.city.label(class="form-label") }}
+      {{ form.city(class="form-control") }}
+      {% if form.city.errors %}
+      <div class="alert alert-danger">
+        {% for error in form.city.errors %}
+        {{ error }}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.place.label(class="form-label") }}
+      {{ form.place(class="form-control") }}
+      <small class="text-muted">(необязательно)</small>
+      {% if form.place.errors %}
+      <div class="alert alert-danger">
+        {% for error in form.place.errors %}
+        {{ error }}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.image.label(class="form-label") }}
+      {{ form.image(class="form-control") }}
+      <small class="text-muted">(необязательно)</small>
+      {% if form.image.errors %}
+      <div class="alert alert-danger">
+        {% for error in form.image.errors %}
+        {{ error }}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+      <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-secondary">Отмена</a>
+    </div>
   </form>
 </div>
-{% endblock %}
 
 {% block scripts %}
 <script>
-  function previewImage(input) {
-    if (input.files && input.files[0]) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        document.querySelector('#image-preview').src = e.target.result;
-      };
-      reader.readAsDataURL(input.files[0]);
+  function showNewPlaceInput() {
+    const placeSelect = document.getElementById('place');
+    const newPlaceInput = document.getElementById('new_place');
+
+    if (placeSelect.value) {
+      placeSelect.value = '';
     }
+
+    newPlaceInput.style.display = newPlaceInput.style.display === 'none' ? 'block' : 'none';
   }
 
-  document.querySelector('#image').addEventListener('change', function () {
-    previewImage(this);
+  document.getElementById('place').addEventListener('change', function () {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+      document.getElementById('city').value = selectedOption.dataset.city;
+      document.getElementById('new_place').style.display = 'none';
+    }
   });
 </script>
+{% endblock %}
 {% endblock %}

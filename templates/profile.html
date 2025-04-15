@@ -1,49 +1,163 @@
 {% extends "base.html" %}
 
-{% block title %}Профиль{% endblock %}
+{% block title %}Профиль {{ user.username }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <!-- <img src="{{ url_for('static', filename='uploads/' + user.avatar) if user.avatar else url_for('static', filename='images/default_avatar.jpg') }}" 
-                         class="img-fluid rounded-circle mb-3" alt="Avatar"> -->
-                    <h5 class="card-title">{{ user.username }}</h5>
-                    <p class="card-text">{{ user.email }}</p>
-                    {% if current_user.is_authenticated and current_user.id == user.id %}
-                    <a href="{{ url_for('main.edit_profile') }}" class="btn btn-primary">Редактировать профиль</a>
-                    {% endif %}
-                </div>
+  <div class="row">
+    <!-- Левая колонка - информация о пользователе -->
+    <div class="col-md-4">
+      <div class="card mb-4">
+        <div class="card-body text-center">
+          {% if user.avatar %}
+          <img src="{{ url_for('static', filename=user.avatar) }}" class="rounded-circle mb-3"
+            style="width: 150px; height: 150px; object-fit: cover;">
+          {% else %}
+          <div class="rounded-circle mb-3 bg-light d-flex align-items-center justify-content-center"
+            style="width: 150px; height: 150px; margin: 0 auto;">
+            <i class="fas fa-user fa-3x text-muted"></i>
+          </div>
+          {% endif %}
+          <h4>{{ user.username }}</h4>
+          <p class="text-muted">{{ user.email }}</p>
+
+          <!-- Статистика -->
+          <div class="row mt-4">
+            <div class="col-6">
+              <h6>Посты</h6>
+              <p class="h4">{{ user.posts|length }}</p>
             </div>
-        </div>
-        <div class="col-md-8">
-            <h3>Посты пользователя</h3>
-            {% if posts %}
-            <div class="row">
-                {% for post in posts %}
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        {% if post.image_path %}
-                        <img src="{{ url_for('static', filename=post.image_path) }}" class="card-img-top" alt="Post image">
-                        {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ post.title }}</h5>
-                            <p class="card-text">{{ post.content[:200] }}...</p>
-                            <p class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</p>
-                            <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-primary">Читать далее</a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+            <div class="col-6">
+              <h6>Лайки</h6>
+              <p class="h4">{{ total_likes }}</p>
             </div>
-            {% else %}
-            <p>У пользователя пока нет постов.</p>
-            {% endif %}
+          </div>
+          <div class="row mt-3">
+            <div class="col-6">
+              <h6>Комментарии</h6>
+              <p class="h4">{{ total_comments }}</p>
+            </div>
+          </div>
+
+          {% if current_user.id == user.id %}
+          <a href="{{ url_for('main.edit_profile') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Редактировать профиль
+          </a>
+          {% endif %}
         </div>
+      </div>
+
+      <!-- Статистика -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Статистика</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Заметки:</span>
+            <span class="badge bg-primary">{{ user.notes|length }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Избранные места:</span>
+            <span class="badge bg-primary">{{ user.place_favorites|length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Блок действий -->
+      {% if current_user.id == user.id %}
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Действия</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('main.create_post') }}" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Создать пост
+            </a>
+            <a href="{{ url_for('main.notes') }}" class="btn btn-primary">
+              <i class="fas fa-sticky-note"></i> Создать заметку
+            </a>
+            <a href="{{ url_for('main.logout') }}" class="btn btn-outline-danger">
+              <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
+            </a>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+              <i class="fas fa-trash"></i> Удалить аккаунт
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
+
+    <!-- Правая колонка - посты пользователя -->
+    <div class="col-md-8">
+      <h4 class="mb-4">Посты пользователя</h4>
+      {% if user.posts %}
+      <div class="row">
+        {% for post in user.posts %}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            {% if post.image_path %}
+            <img src="{{ url_for('static', filename=post.image_path) }}" class="card-img-top" alt="{{ post.title }}"
+              style="height: 200px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title">{{ post.title }}</h5>
+              <p class="card-text">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</p>
+              <p class="card-text">
+                <small class="text-muted">
+                  <i class="fas fa-map-marker-alt"></i> {{ post.place.city }}, {{ post.place.country }}
+                </small>
+              </p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="me-3">
+                    <i class="fas fa-heart"></i> {{ post.likes|length }}
+                  </span>
+                  <span>
+                    <i class="fas fa-comment"></i> {{ post.comments|length }}
+                  </span>
+                </div>
+                <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-outline-primary">Читать
+                  далее</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        У пользователя пока нет постов
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<!-- Модальное окно для удаления аккаунта -->
+{% if current_user.id == user.id %}
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Удаление аккаунта</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form action="{{ url_for('main.delete_account') }}" method="POST">
+          <button type="submit" class="btn btn-danger">Удалить аккаунт</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

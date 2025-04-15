@@ -4,85 +4,102 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card mb-4">
-        {% if place.image_path %}
-        <img src="{{ url_for('static', filename=place.image_path.replace('static/', '')) }}" class="card-img-top" alt="{{ place.name }}" style="height: 400px; object-fit: cover;">
-        {% else %}
-        <img src="{{ url_for('static', filename='images/default_place.jpg') }}" class="card-img-top" alt="Изображение места отсутствует" style="height: 400px; object-fit: cover;">
-        {% endif %}
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="card-title">{{ place.name }}</h1>
-                <button onclick="toggleFavorite({{ place.id }})" class="btn btn-outline-danger favorite-btn" data-place-id="{{ place.id }}">
-                    <i class="fas fa-heart"></i>
-                </button>
-            </div>
-            <p class="card-text"><strong>Город:</strong> {{ place.city }}</p>
-            <p class="card-text">{{ place.description }}</p>
-        </div>
-    </div>
-
-    <h2>Посты о месте</h2>
-    {% if posts %}
     <div class="row">
-        {% for post in posts %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                {% if post.image_path %}
-                <img src="{{ url_for('static', filename=post.image_path.replace('static/', '')) }}" class="card-img-top" alt="{{ post.title }}">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                {% if place.image_path %}
+                <img src="{{ url_for('static', filename=place.image_path) }}" class="card-img-top"
+                    alt="{{ place.name }}">
                 {% endif %}
                 <div class="card-body">
-                    <h5 class="card-title">{{ post.title }}</h5>
-                    <p class="card-text">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
-                    <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn btn-primary">Читать далее</a>
+                    <h1 class="card-title">{{ place.name }}</h1>
+                    <p class="text-muted">{{ place.city }}, {{ place.country }}</p>
+                    <p class="card-text">{{ place.description }}</p>
+                    {% if current_user.is_authenticated %}
+                    <button class="btn btn-outline-primary toggle-favorite" data-place-id="{{ place.id }}">
+                        {% if is_favorite %}
+                        <i class="fas fa-heart"></i> В избранном
+                        {% else %}
+                        <i class="far fa-heart"></i> Добавить в избранное
+                        {% endif %}
+                    </button>
+                    {% endif %}
                 </div>
-                <div class="card-footer">
-                    <small class="text-muted">Автор: {{ post.author.username }}</small>
-                    <br>
-                    <small class="text-muted">Опубликовано: {{ post.date_posted.strftime('%d.%m.%Y') }}</small>
+            </div>
+
+            <h3>Посты об этом месте</h3>
+            {% for post in posts %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.content[:200] }}...</p>
+                    <p class="text-muted">Автор: {{ post.author.username }}, {{ post.created_at.strftime('%d.%m.%Y') }}
+                    </p>
+                    <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-primary">Читать
+                        далее</a>
+                </div>
+            </div>
+            {% else %}
+            <p>Пока нет постов об этом месте.</p>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Заметки</h5>
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('main.create_note', place_id=place.id) }}">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Заголовок</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Содержание</label>
+                            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Добавить заметку</button>
+                    </form>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        {% for note in notes %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ note.title }}</h6>
+                                <p class="card-text">{{ note.content }}</p>
+                                <small class="text-muted">{{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <p>Пока нет постов об этом месте.</p>
-    {% endif %}
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.querySelector('.favorite-btn');
-    const placeId = btn.dataset.placeId;
-    
-    fetch(`/place/${placeId}/is_favorite`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.is_favorite) {
-                btn.classList.remove('btn-outline-danger');
-                btn.classList.add('btn-danger');
-            }
-        });
-});
-
-function toggleFavorite(placeId) {
-    const btn = document.querySelector('.favorite-btn');
-    fetch(`/favorite/${placeId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'added') {
-            btn.classList.remove('btn-outline-danger');
-            btn.classList.add('btn-danger');
-        } else {
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-outline-danger');
+    document.addEventListener('DOMContentLoaded', function () {
+        const favoriteButton = document.querySelector('.toggle-favorite');
+        if (favoriteButton) {
+            favoriteButton.addEventListener('click', function () {
+                const placeId = this.dataset.placeId;
+                fetch(`/place/${placeId}/toggle_favorite`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'added') {
+                            this.innerHTML = '<i class="fas fa-heart"></i> В избранном';
+                        } else {
+                            this.innerHTML = '<i class="far fa-heart"></i> Добавить в избранное';
+                        }
+                    });
+            });
         }
     });
-}
 </script>
-{% endblock %} 
+{% endblock %}
